@@ -106,7 +106,8 @@ export class Login {
       }
     }
 
-    async retrieveUserInfo() {
+    async retrieveUserInfo(conf) {
+      this.setConf(conf);
       const savedTokens = await this.getTokens();
       if (savedTokens) {
         this.props.url = `${this.getRealmURL()}/protocol/openid-connect/userinfo`;
