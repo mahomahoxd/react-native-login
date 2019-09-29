@@ -89,7 +89,7 @@ export class Login {
     this.props.url = `${this.getRealmURL()}/protocol/openid-connect/token`;
 
     // Cleans off hashes and everything after in order to keep a clean code
-    code = code.substring(0, code.indexOf('#'));
+    code = code.split('#')[0];
 
     this.setRequestOptions(
       'POST',
