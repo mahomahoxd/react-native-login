@@ -1,6 +1,7 @@
-import { Linking } from 'react-native';
 import * as querystring from 'query-string';
+import { Linking } from 'react-native';
 import uuidv4 from 'uuid/v4';
+import { URL_EVENT, URL } from './Constants';
 
 export class Login {
     state;
@@ -10,7 +11,7 @@ export class Login {
     constructor() {
       this.state = {};
       this.onOpenURL = this.onOpenURL.bind(this);
-      Linking.addEventListener('url', this.onOpenURL);
+      Linking.addEventListener(URL, this.onOpenURL);
 
       this.props = {
         requestOptions: {
@@ -29,7 +30,7 @@ export class Login {
       return this.tokenStorage.loadTokens();
     }
 
-    startLoginProcess(conf) {
+    startLoginProcess(conf, emitter) {
       this.setConf(conf);
       return new Promise(((resolve, reject) => {
         const { url, state } = this.getLoginURL();
@@ -39,7 +40,12 @@ export class Login {
           reject,
           state,
         };
-        Linking.openURL(url);
+
+        if (emitter && emitter.emit) {
+          emitter.emit(URL_EVENT, url);
+        } else {
+          Linking.openURL(url);
+        }
       }));
     }
 
@@ -153,7 +159,9 @@ export class Login {
     }
 
     getLoginURL() {
-      const { redirectUri, clientId, kcIdpHint,options } = this.conf;
+      const {
+        redirectUri, clientId, kcIdpHint, options,
+      } = this.conf;
       const responseType = 'code';
       const state = uuidv4();
       const scope = 'openid';
@@ -163,7 +171,7 @@ export class Login {
         redirect_uri: redirectUri,
         client_id: clientId,
         response_type: responseType,
-        options:options,
+        options,
         state,
       })}`;
 
