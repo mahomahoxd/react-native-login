@@ -2,6 +2,7 @@ import * as querystring from 'query-string';
 import { Linking } from 'react-native';
 import uuidv4 from 'uuid/v4';
 import { URL_EVENT, URL } from './Constants';
+import {decode as atob, encode as btoa} from 'base-64'
 
 export class Login {
     state;
@@ -102,6 +103,9 @@ export class Login {
         }),
       );
 
+      if(this.conf.clientSecret) {
+        this.setHeader('Authorization', 'Basic ' + btoa(this.conf.clientId + ':' + this.conf.clientSecret));
+      }
       const fullResponse = await fetch(this.props.url, this.props.requestOptions);
       const jsonResponse = await fullResponse.json();
       if (fullResponse.ok) {
