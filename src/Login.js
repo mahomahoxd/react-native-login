@@ -31,7 +31,7 @@ export class Login {
       return this.tokenStorage.loadTokens();
     }
 
-    startLoginProcess(conf, emitter) {
+    startLoginProcess(conf, callback) {
       this.setConf(conf);
       return new Promise(((resolve, reject) => {
         const { url, state } = this.getLoginURL();
@@ -42,8 +42,8 @@ export class Login {
           state,
         };
 
-        if (emitter && emitter.emit) {
-          emitter.emit(URL_EVENT, url);
+        if (callback) {
+          callback(url);
         } else {
           Linking.openURL(url);
         }
@@ -56,19 +56,16 @@ export class Login {
       }
     }
 
-    async logoutKc() {
-      const { clientId } = this.conf;
+    async logoutKc(conf) {
+      const { clientId } = conf;
       const savedTokens = await this.getTokens();
       if (!savedTokens) {
+        console.warn("Token is undefined")
         return undefined;
       }
 
       this.props.url = `${this.getRealmURL()}/protocol/openid-connect/logout`;
-
-      this.setRequestOptions(
-        'POST',
-        querystring.stringify({ client_id: clientId, refresh_token: savedTokens.refresh_token }),
-      );
+      this.setRequestOptions('GET');
 
       const fullResponse = await fetch(this.props.url, this.props.requestOptions);
 
@@ -76,6 +73,7 @@ export class Login {
         this.tokenStorage.clearTokens();
         return true;
       }
+      console.error("Error during kc-logout: ", fullResponse)
       return false;
     }
 
