@@ -35,6 +35,7 @@ export class Login {
       this.setConf(conf);
       return new Promise(((resolve, reject) => {
         const { url, state } = this.getLoginURL();
+     
         this.state = {
           ...this.state,
           resolve,
@@ -42,11 +43,9 @@ export class Login {
           state,
         };
 
-        if (callback) {
-          callback(url);
-        } else {
-          Linking.openURL(url);
-        }
+        const fn = callback || Linking.openURL;
+        fn(url);
+      
       }));
     }
 
