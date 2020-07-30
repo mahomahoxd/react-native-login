@@ -1,4 +1,5 @@
-const URL_EVENT = 'url-event';
+const GET = 'GET';
+const POST = 'POST';
 const URL = 'url';
 
-export { URL_EVENT, URL };
+export { GET, POST, URL };

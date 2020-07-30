@@ -1,6 +1,8 @@
 import base64 from 'base-64';
+import * as qs from 'query-string';
+import uuidv4 from 'uuid/v4';
 
-export function decodeToken(token) {
+const decodeToken = (token) => {
   let str = token.split('.')[1];
 
   str = str.replace('/-/g', '+');
@@ -25,4 +27,38 @@ export function decodeToken(token) {
 
   str = JSON.parse(str);
   return str;
-}
+};
+
+const getRealmURL = (realm, url) => {
+  const slash = url.endsWith('/') ? '' : '/';
+  return `${url + slash}realms/${encodeURIComponent(realm)}`;
+};
+
+const getLoginURL = (conf) => {
+  const {
+    redirectUri, clientId, kcIdpHint, options,
+  } = conf;
+  const responseType = 'code';
+  const state = uuidv4();
+  const scope = 'openid';
+  const url = `${getRealmURL(conf)}/protocol/openid-connect/auth?${qs.stringify({
+    scope,
+    kc_idp_hint: kcIdpHint,
+    redirect_uri: redirectUri,
+    client_id: clientId,
+    response_type: responseType,
+    options,
+    state,
+  })}`;
+
+  return {
+    url,
+    state,
+  };
+};
+
+export {
+  decodeToken,
+  getRealmURL,
+  getLoginURL,
+};

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-community/async-storage';
 
-export class TokenStorage {
+export default class TokenStorage {
   key;
   constructor(key) {
     this.key = key;

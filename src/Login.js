@@ -1,200 +1,145 @@
-import * as querystring from 'query-string';
+import * as qs from 'query-string';
 import { Linking } from 'react-native';
-import uuidv4 from 'uuid/v4';
-import { URL_EVENT, URL } from './Constants';
-import {decode as atob, encode as btoa} from 'base-64'
+import { encode as btoa } from 'base-64';
+import { getRealmURL, getLoginURL } from './Utils';
+import {
+  GET, POST, URL,
+} from './Constants';
 
-export class Login {
-    state;
-    conf;
-    tokenStorage;
+const basicHeaders = {
+  Accept: 'application/json',
+  'Content-Type': 'application/x-www-form-urlencoded',
+};
 
-    constructor() {
-      this.state = {};
-      this.onOpenURL = this.onOpenURL.bind(this);
-      Linking.addEventListener(URL, this.onOpenURL);
+export default class {
+  constructor(tokenStorage) {
+    this.tokenStorage = tokenStorage;
+  }
 
-      this.props = {
-        requestOptions: {
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          method: 'GET',
-          body: undefined,
-        },
-        url: '',
-      };
-    }
+  startLoginProcess(conf, callback) {
+    return new Promise(((resolve, reject) => {
+      const { url, state } = getLoginURL(conf);
 
-    getTokens() {
-      return this.tokenStorage.loadTokens();
-    }
+      const listener = event => this.onOpenURL(conf, resolve, reject, state, event);
+      Linking.addEventListener(URL, listener);
 
-    startLoginProcess(conf, callback) {
-      this.setConf(conf);
-      return new Promise(((resolve, reject) => {
-        const { url, state } = this.getLoginURL();
-     
-        this.state = {
-          ...this.state,
-          resolve,
-          reject,
-          state,
-        };
+      const login = callback || Linking.openURL;
+      login(url);
+    }));
+  }
 
-        const fn = callback || Linking.openURL;
-        fn(url);
-      
-      }));
-    }
+  onOpenURL(conf, resolve, reject, state, event) {
+    const isRedirectUrlADeepLink = event.url.startsWith(conf.appsiteUri);
 
-    setConf(conf) {
-      if (conf) {
-        this.conf = conf;
-      }
-    }
-
-    async logoutKc(conf) {
-      const { clientId } = conf;
-      const savedTokens = await this.getTokens();
-      if (!savedTokens) {
-        console.warn("Token is undefined")
-        return undefined;
-      }
-
-      this.props.url = `${this.getRealmURL()}/protocol/openid-connect/logout`;
-      this.setRequestOptions('GET');
-
-      const fullResponse = await fetch(this.props.url, this.props.requestOptions);
-
-      if (fullResponse.ok) {
-        this.tokenStorage.clearTokens();
-        return true;
-      }
-      console.error("Error during kc-logout: ", fullResponse)
-      return false;
-    }
-
-    onOpenURL(event) {
-      if (event.url.startsWith(this.conf.appsiteUri)) {
-        const {
-          state,
-          code,
-        } = querystring.parse(querystring.extract(event.url));
-        if (this.state.state === state) {
-          this.retrieveTokens(code);
-        }
-      }
-    }
-
-
-    async retrieveTokens(code) {
-      const { redirectUri, clientId } = this.conf;
-      this.props.url = `${this.getRealmURL()}/protocol/openid-connect/token`;
-
-      this.setRequestOptions(
-        'POST',
-        querystring.stringify({
-          grant_type: 'authorization_code', redirect_uri: redirectUri, client_id: clientId, code,
-        }),
-      );
-
-      if(this.conf.clientSecret) {
-        this.setHeader('Authorization', 'Basic ' + btoa(this.conf.clientId + ':' + this.conf.clientSecret));
-      }
-      const fullResponse = await fetch(this.props.url, this.props.requestOptions);
-      const jsonResponse = await fullResponse.json();
-      if (fullResponse.ok) {
-        this.tokenStorage.saveTokens(jsonResponse);
-        this.state.resolve(jsonResponse);
-      } else {
-        this.state.reject(jsonResponse);
-      }
-    }
-
-    async retrieveUserInfo() {
-      const savedTokens = await this.getTokens();
-      if (savedTokens) {
-        this.props.url = `${this.getRealmURL()}/protocol/openid-connect/userinfo`;
-
-        this.setHeader('Authorization', `Bearer ${savedTokens.access_token}`);
-        this.setRequestOptions('GET');
-
-        const fullResponse = await fetch(this.props.url, this.props.requestOptions);
-        if (fullResponse.ok) {
-          return fullResponse.json();
-        }
-      }
-      return undefined;
-    }
-
-    async refreshToken() {
-      const savedTokens = await this.getTokens();
-      if (!savedTokens) {
-        return undefined;
-      }
-
-      const { clientId } = this.conf;
-      this.props.url = `${this.getRealmURL()}/protocol/openid-connect/token`;
-
-      this.setRequestOptions('POST', querystring.stringify({
-        grant_type: 'refresh_token',
-        refresh_token: savedTokens.refresh_token,
-        client_id: encodeURIComponent(clientId),
-      }));
-
-      const fullResponse = await fetch(this.props.url, this.props.requestOptions);
-      if (fullResponse.ok) {
-        const jsonResponse = await fullResponse.json();
-        this.tokenStorage.saveTokens(jsonResponse);
-        return jsonResponse;
-      }
-      return undefined;
-    }
-
-    getRealmURL() {
-      const { url, realm } = this.conf;
-      const slash = url.endsWith('/') ? '' : '/';
-      return `${url + slash}realms/${encodeURIComponent(realm)}`;
-    }
-
-    getLoginURL() {
+    if (isRedirectUrlADeepLink) {
       const {
-        redirectUri, clientId, kcIdpHint, options,
-      } = this.conf;
-      const responseType = 'code';
-      const state = uuidv4();
-      const scope = 'openid';
-      const url = `${this.getRealmURL()}/protocol/openid-connect/auth?${querystring.stringify({
-        scope,
-        kc_idp_hint: kcIdpHint,
-        redirect_uri: redirectUri,
-        client_id: clientId,
-        response_type: responseType,
-        options,
-        state,
-      })}`;
+        state: stateFromUrl,
+        code,
+      } = qs.parse(qs.extract(event.url));
 
-      return {
-        url,
-        state,
-      };
+      if (state === stateFromUrl) {
+        this.retrieveTokens(conf, code, resolve, reject);
+      }
+    }
+  }
+
+  async retrieveTokens(conf, code, resolve, reject) {
+    const {
+      clientId, clientSecret, realm, redirectUri, url,
+    } = conf;
+
+    const tokenUrl = `${getRealmURL(realm, url)}/protocol/openid-connect/token`;
+    const method = POST;
+
+    const headers = clientSecret
+      ? { ...basicHeaders, Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}` }
+      : basicHeaders;
+
+    const body = qs.stringify({
+      grant_type: 'authorization_code', redirect_uri: redirectUri, client_id: clientId, code,
+    });
+
+    const options = { headers, method, body };
+    const fullResponse = await fetch(tokenUrl, options);
+    const jsonResponse = await fullResponse.json();
+
+    if (fullResponse.ok) {
+      this.tokenStorage.saveTokens(jsonResponse);
+      resolve(jsonResponse);
+    } else {
+      reject(jsonResponse);
+    }
+  }
+
+  async retrieveUserInfo(conf) {
+    const { realm, url } = conf;
+    const savedTokens = await this.getTokens();
+
+    if (savedTokens) {
+      const userInfoUrl = `${getRealmURL(realm, url)}/protocol/openid-connect/userinfo`;
+      const method = GET;
+      const headers = { ...basicHeaders, Authorization: `Bearer ${savedTokens.access_token}` };
+      const options = { headers, method };
+      const fullResponse = await fetch(userInfoUrl, options);
+
+      if (fullResponse.ok) {
+        return fullResponse.json();
+      }
+    }
+    return Promise.reject();
+  }
+
+  async refreshToken(conf) {
+    const { clientId, realm, url } = conf;
+    const savedTokens = await this.getTokens();
+
+    if (!savedTokens) {
+      console.warn('Missing tokens');
+      return Promise.reject();
     }
 
-    setTokenStorage(tokenStorage) {
-      this.tokenStorage = tokenStorage;
+    const refreshTokenUrl = `${getRealmURL(realm, url)}/protocol/openid-connect/token`;
+    const method = POST;
+    const body = qs.stringify({
+      grant_type: 'refresh_token',
+      refresh_token: savedTokens.refresh_token,
+      client_id: encodeURIComponent(clientId),
+    });
+    const options = { headers: basicHeaders, method, body };
+
+    const fullResponse = await fetch(refreshTokenUrl, options);
+    if (fullResponse.ok) {
+      const jsonResponse = await fullResponse.json();
+      this.tokenStorage.saveTokens(jsonResponse);
+      return jsonResponse;
     }
 
-    setRequestOptions(method, body) {
-      this.props.requestOptions = {
-        ...this.props.requestOptions,
-        method,
-        body,
-      };
+    return Promise.reject();
+  }
+
+  async logoutKc(conf) {
+    const { realm, url } = conf;
+    const savedTokens = await this.getTokens();
+    if (!savedTokens) {
+      console.warn('Token is undefined');
+      return Promise.reject();
     }
 
-    setHeader(key, value) {
-      this.props.requestOptions.headers[key] = value;
+    const logoutUrl = `${getRealmURL(realm, url)}/protocol/openid-connect/logout`;
+    const method = GET;
+    const options = { headers: basicHeaders, method };
+    const fullResponse = await fetch(logoutUrl, options);
+
+    if (fullResponse.ok) {
+      this.tokenStorage.clearTokens();
+      return true;
     }
+    console.error('Error during kc-logout: ', fullResponse);
+    return false;
+  }
+
+
+  getTokens() {
+    return this.tokenStorage.loadTokens();
+  }
 }
