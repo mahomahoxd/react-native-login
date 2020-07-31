@@ -38,12 +38,12 @@ export default class {
       } = qs.parse(qs.extract(event.url));
 
       if (state === stateFromUrl) {
-        this.retrieveTokens(conf, code, resolve, reject);
+        this.retrieveTokens(conf, code, resolve, reject, event.url);
       }
     }
   }
 
-  async retrieveTokens(conf, code, resolve, reject) {
+  async retrieveTokens(conf, code, resolve, reject, deepLinkUrl) {
     const {
       resource, credentials, realm, redirectUri, 'auth-server-url': authServerUrl,
     } = conf;
@@ -65,7 +65,7 @@ export default class {
 
     if (fullResponse.ok) {
       this.tokenStorage.saveTokens(jsonResponse);
-      resolve(jsonResponse);
+      resolve(jsonResponse, deepLinkUrl);
     } else {
       reject(jsonResponse);
     }
