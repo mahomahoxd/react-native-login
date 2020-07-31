@@ -29,23 +29,23 @@ const decodeToken = (token) => {
   return str;
 };
 
-const getRealmURL = (realm, url) => {
-  const slash = url.endsWith('/') ? '' : '/';
-  return `${url + slash}realms/${encodeURIComponent(realm)}`;
+const getRealmURL = (realm, authServerUrl) => {
+  const url = authServerUrl.endsWith('/') ? authServerUrl : `${authServerUrl}/`;
+  return `${url}realms/${encodeURIComponent(realm)}`;
 };
 
 const getLoginURL = (conf) => {
   const {
-    redirectUri, clientId, kcIdpHint, options,
+    realm, redirectUri, resource, kcIdpHint, options, 'auth-server-url': authServerUrl,
   } = conf;
   const responseType = 'code';
   const state = uuidv4();
   const scope = 'openid';
-  const url = `${getRealmURL(conf)}/protocol/openid-connect/auth?${qs.stringify({
+  const url = `${getRealmURL(realm, authServerUrl)}/protocol/openid-connect/auth?${qs.stringify({
     scope,
     kc_idp_hint: kcIdpHint,
     redirect_uri: redirectUri,
-    client_id: clientId,
+    client_id: resource,
     response_type: responseType,
     options,
     state,

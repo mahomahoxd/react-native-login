@@ -46,7 +46,7 @@ console.log(gatheredTokens);
 const config = {
   url: 'https://<KEYCLOAK_HOST>/auth',
   realm: '<REALM NAME>',
-  clientId: '<CLIENT ID>',
+  resource: '<RESOURCE NAME>',
   redirectUri: 'https://<REDIRECT HOST>/success.html',
   appsiteUri: 'https://<APPSITE HOST>/app.html',
   kcIdpHint: 'facebook', // *optional*

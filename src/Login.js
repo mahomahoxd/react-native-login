@@ -45,18 +45,18 @@ export default class {
 
   async retrieveTokens(conf, code, resolve, reject) {
     const {
-      clientId, clientSecret, realm, redirectUri, url,
+      resource, clientSecret, realm, redirectUri, 'auth-server-url': authServerUrl,
     } = conf;
 
-    const tokenUrl = `${getRealmURL(realm, url)}/protocol/openid-connect/token`;
+    const tokenUrl = `${getRealmURL(realm, authServerUrl)}/protocol/openid-connect/token`;
     const method = POST;
 
     const headers = clientSecret
-      ? { ...basicHeaders, Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}` }
+      ? { ...basicHeaders, Authorization: `Basic ${btoa(`${resource}:${clientSecret}`)}` }
       : basicHeaders;
 
     const body = qs.stringify({
-      grant_type: 'authorization_code', redirect_uri: redirectUri, client_id: clientId, code,
+      grant_type: 'authorization_code', redirect_uri: redirectUri, client_id: resource, code,
     });
 
     const options = { headers, method, body };
@@ -72,11 +72,11 @@ export default class {
   }
 
   async retrieveUserInfo(conf) {
-    const { realm, url } = conf;
+    const { realm, 'auth-server-url': authServerUrl } = conf;
     const savedTokens = await this.getTokens();
 
     if (savedTokens) {
-      const userInfoUrl = `${getRealmURL(realm, url)}/protocol/openid-connect/userinfo`;
+      const userInfoUrl = `${getRealmURL(realm, authServerUrl)}/protocol/openid-connect/userinfo`;
       const method = GET;
       const headers = { ...basicHeaders, Authorization: `Bearer ${savedTokens.access_token}` };
       const options = { headers, method };
@@ -90,7 +90,7 @@ export default class {
   }
 
   async refreshToken(conf) {
-    const { clientId, realm, url } = conf;
+    const { resource, realm, 'auth-server-url': authServerUrl } = conf;
     const savedTokens = await this.getTokens();
 
     if (!savedTokens) {
@@ -98,12 +98,12 @@ export default class {
       return Promise.reject();
     }
 
-    const refreshTokenUrl = `${getRealmURL(realm, url)}/protocol/openid-connect/token`;
+    const refreshTokenUrl = `${getRealmURL(realm, authServerUrl)}/protocol/openid-connect/token`;
     const method = POST;
     const body = qs.stringify({
       grant_type: 'refresh_token',
       refresh_token: savedTokens.refresh_token,
-      client_id: encodeURIComponent(clientId),
+      client_id: encodeURIComponent(resource),
     });
     const options = { headers: basicHeaders, method, body };
 
@@ -118,14 +118,14 @@ export default class {
   }
 
   async logoutKc(conf) {
-    const { realm, url } = conf;
+    const { realm, 'auth-server-url': authServerUrl } = conf;
     const savedTokens = await this.getTokens();
     if (!savedTokens) {
       console.warn('Token is undefined');
       return Promise.reject();
     }
 
-    const logoutUrl = `${getRealmURL(realm, url)}/protocol/openid-connect/logout`;
+    const logoutUrl = `${getRealmURL(realm, authServerUrl)}/protocol/openid-connect/logout`;
     const method = GET;
     const options = { headers: basicHeaders, method };
     const fullResponse = await fetch(logoutUrl, options);
