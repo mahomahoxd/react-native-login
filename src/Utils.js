@@ -29,8 +29,7 @@ const decodeToken = (token) => {
   return str;
 };
 
-const getRealmURL = (conf) => {
-  const { realm, 'auth-server-url': authServerUrl } = conf;
+const getRealmURL = (realm, authServerUrl) => {
   const url = authServerUrl.endsWith('/') ? authServerUrl : `${authServerUrl}/`;
   return `${url}realms/${encodeURIComponent(realm)}`;
 };
