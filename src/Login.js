@@ -45,14 +45,14 @@ export default class {
 
   async retrieveTokens(conf, code, resolve, reject) {
     const {
-      resource, clientSecret, realm, redirectUri, 'auth-server-url': authServerUrl,
+      resource, credentials, realm, redirectUri, 'auth-server-url': authServerUrl,
     } = conf;
 
     const tokenUrl = `${getRealmURL(realm, authServerUrl)}/protocol/openid-connect/token`;
     const method = POST;
 
-    const headers = clientSecret
-      ? { ...basicHeaders, Authorization: `Basic ${btoa(`${resource}:${clientSecret}`)}` }
+    const headers = credentials && credentials.secret
+      ? { ...basicHeaders, Authorization: `Basic ${btoa(`${resource}:${credentials.secret}`)}` }
       : basicHeaders;
 
     const body = qs.stringify({
