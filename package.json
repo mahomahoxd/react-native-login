@@ -19,7 +19,7 @@
     "oauth",
     "social",
     "openid",
-    "token",
+    "token"
   ],
   "author":   {
     "name": "Luca Tagliabue"
