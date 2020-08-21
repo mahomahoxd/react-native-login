@@ -1,14 +1,14 @@
 {
   "name": "react-native-login-keycloak",
-  "version": "1.0.3",
-  "description": "React Native module for authentication between a client and the keycloak server.",
+  "version": "0.1.0",
+  "description": "Functional React Native module for authentication between a client and the keycloak server.",
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mahomahoxd/react-native-login-keycloak.git"
+    "url": "git+https://github.com/lucataglia/react-native-login-keycloak.git"
   },
   "keywords": [
     "auth",
@@ -18,17 +18,17 @@
     "google",
     "oauth",
     "social",
-    "openid"
+    "openid",
+    "token",
   ],
-  "author": [
-    "Maho Murtic",
-    "Anton Krekovsky"
-  ],
+  "author":   {
+    "name": "Luca Tagliabue"
+  },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mahomahoxd/react-native-login-keycloak/issues"
+    "url": "https://github.com/lucataglia/react-native-login-keycloak/issues"
   },
-  "homepage": "https://github.com/mahomahoxd/react-native-login-keycloak#readme",
+  "homepage": "https://github.com/lucataglia/react-native-login-keycloak#readme",
   "dependencies": {
     "@react-native-community/async-storage": "1.11.0",
     "base-64": "^0.1.0",
