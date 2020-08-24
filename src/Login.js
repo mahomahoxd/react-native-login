@@ -11,7 +11,7 @@ const basicHeaders = {
   'Content-Type': 'application/x-www-form-urlencoded',
 };
 
-export default class {
+class Login {
   constructor(tokenStorage) {
     this.tokenStorage = tokenStorage;
   }
@@ -143,3 +143,5 @@ export default class {
     return this.tokenStorage.loadTokens();
   }
 }
+
+export default Login;
